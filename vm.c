@@ -62,7 +62,16 @@ void initVM(VirtualMachine* vm)
  * */
 int readInstructions(FILE* in, Instruction* ins)
 {
-    // TODO
+    // Instruction index
+    int i = 0;
+    
+    while(fscanf(in, "%d %d %d %d", &ins[i].op, &ins[i].r, &ins[i].l, &ins[i].m) != EOF)
+    {
+        i++;
+    }
+
+    // Return the number of instructions read
+    return i;
 }
 
 /**
@@ -77,7 +86,15 @@ void dumpInstructions(FILE* out, Instruction* ins, int numOfIns)
         );
 
     // Instructions
-    // TODO
+    int i;
+    for(i = 0; i < numOfIns; i++)
+    {
+        fprintf(
+            out,
+            "%3d %3s %3d %3d %3d \n", // formatting
+            i, opcodes[ins[i].op], ins[i].r, ins[i].l, ins[i].m
+        );
+    }
 }
 
 /**
@@ -92,7 +109,34 @@ int getBasePointer(int *stack, int currentBP, int L)
 // Do not forget to use '|' character between stack frames
 void dumpStack(FILE* out, int* stack, int sp, int bp)
 {
-    // TODO
+    if(bp == 0)
+        return;
+
+    // bottom-most level, where a single zero value lies
+    if(bp == 1)
+    {
+        fprintf(out, "%3d ", 0);
+    }
+
+    // former levels - if exists
+    if(bp != 1)
+    {
+        dumpStack(out, stack, bp - 1, stack[bp + 2]);            
+    }
+
+    // top level: current activation record
+    if(bp <= sp)
+    {
+        // indicate a new activation record
+        fprintf(out, "| ");
+
+        // print the activation record
+        int i;
+        for(i = bp; i <= sp; i++)
+        {
+            fprintf(out, "%3d ", stack[i]);
+        }
+    }
 }
 
 /**
@@ -144,7 +188,12 @@ void simulateVM(
 
     // Before starting the code execution on the virtual machine,
     // .. write the header for the simulation part (***Execution***)
-    // TODO
+    fprintf(outp, "\n***Execution***\n");
+    fprintf(
+        outp,
+        "%3s %3s %3s %3s %3s %3s %3s %3s %3s \n",         // formatting
+        "#", "OP", "R", "L", "M", "PC", "BP", "SP", "STK" // titles
+    );
 
     // Create a virtual machine
     // TODO
@@ -153,10 +202,33 @@ void simulateVM(
     // TODO
 
     // Fetch&Execute the instructions on the virtual machine until halting
-    while( /* TODO: Until halt is signalled.. */ )
+    while( 1 /* TODO: Until halt is signalled.. */ )
     {
-        // Fetch&Execute
+        // Fetch
         // TODO
+
+        // Advance PC - before execution!
+        // TODO
+
+        // Execute the instruction
+        // TODO
+
+        // Print current state
+        // TODO: Following is a possible way of printing the current state
+        // .. where instrBeingExecuted is the address of the instruction at vm
+        // ..  memory and instr is the instruction being executed.
+        /* fprintf(
+            outp,
+            "%3d %3s %3d %3d %3d %3d %3d %3d ",
+            instrBeingExecuted, // place of instruction at memory
+             opcodes[instr.op], instr.r, instr.l, instr.m, // instruction info
+             vm.PC, vm.BP, vm.SP // vm info
+        );*/
+
+        // Print stack info
+        // TODO
+
+        fprintf(outp, "\n");
     }
 
     // Above loop ends when machine halts. Therefore, dump halt message.
