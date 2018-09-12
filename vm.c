@@ -7,15 +7,10 @@
 #include "data.h"
 
 void initVM(VirtualMachine*);
-
 int readInstructions(FILE*, Instruction*);
-
 void dumpInstructions(FILE*, Instruction*, int numOfIns);
-
 int getBasePointer(int *stack, int currentBP, int L);
-
 void dumpStack(FILE*, int* stack, int sp, int bp);
-
 int executeInstruction(VirtualMachine* vm, Instruction ins, FILE* vmIn, FILE* vmOut);
 
 const char *opcodes[] = 
@@ -32,9 +27,24 @@ enum { CONT, HALT };
 
 void initVM(VirtualMachine* vm)
 {
-    if(vm)
+	int i;
+	vm = malloc(sizeof(VirtualMachine));
+
+	vm->BP = 1;
+	vm->SP = 0;
+	vm->PC = 0;
+	vm->IR = 0;
+	
+	for (i = 0; i < REGISTER_FILE_REG_COUNT; i++)
+		vm->RF[i] = 0;
+	
+	for (i = 0; i < MAX_STACK_HEIGHT; i++)
+		vm->stack[i] = 0;
+	
+    if(vm == NULL)
     {
-        // TODO
+        printf("Error! Not enough memory. Could not create VM.\n");
+		exit();
     }
 }
 
@@ -111,11 +121,35 @@ void dumpStack(FILE* out, int* stack, int sp, int bp)
     }
 }
 
+int base(l, base)
+{
+	int b1;
+	
+	b1 = base;
+	
+	while (1 > 0)
+	{
+		b1 = stack[b1 + 1];
+		l--;
+	}
+	
+	return b1;
+}
+
 int executeInstruction(VirtualMachine* vm, Instruction ins, FILE* vmIn, FILE* vmOut)
 {
     switch(ins.op)
     {
-        // TODO
+        case 1:
+			R[ins.r] = ins.m;
+			break;
+		case 2:
+			vm->SP = BP-1;
+			BP = vm->stack[vm->SP+3];
+			PC = vm->stack[vm->SP+4];
+			break;
+		case 3:
+		
         default:
             fprintf(stderr, "Illegal instruction?");
             return HALT;
@@ -124,38 +158,38 @@ int executeInstruction(VirtualMachine* vm, Instruction ins, FILE* vmIn, FILE* vm
     return CONT;
 }
 
-void simulateVM
-	(
-		FILE* inp,
-		FILE* outp,
-		FILE* vm_inp,
-		FILE* vm_outp
-    )
+void simulateVM(FILE* inp, FILE* outp, FILE* vm_inp, FILE* vm_outp)
 {
-    // Read instructions from file
-    // TODO
+	int numOfIns = 0;
+	Instruction *ins = NULL;
+	ins = malloc(sizeof(Instruction) * MAX_CODE_LENGTH);
+	
+	// Read instructions from file
+	numOfIns = readInstructions(inp, ins);
 
     // Dump instructions to the output file
-    // TODO
+    dumpInstructions(outp, ins, numOfIns);
 
     // Before starting the code execution on the virtual machine,
     // .. write the header for the simulation part (***Execution***)
     fprintf(outp, "\n***Execution***\n");
-    fprintf(
+    fprintf
+	(
         outp,
         "%3s %3s %3s %3s %3s %3s %3s %3s %3s \n",         // formatting
         "#", "OP", "R", "L", "M", "PC", "BP", "SP", "STK" // titles
     );
 
     // Create a virtual machine
-    // TODO
+    VirtualMachine* vm = NULL;
 
     // Initialize the virtual machine
-    // TODO
+    initVM(vm);
 
     // Fetch&Execute the instructions on the virtual machine until halting
-    while( 1 /* TODO: Until halt is signalled.. */ )
+    while(flag == CONT)
     {
+		flag = executeInstruction(vm, ins, vmIn, vmOut);
         fprintf(outp, "\n");
     }
 
