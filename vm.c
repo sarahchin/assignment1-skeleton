@@ -7,12 +7,20 @@
 #include "vm.h"
 #include "data.h"
 
+/* ************************************************************************************ */
+/* Declarations                                                                         */
+/* ************************************************************************************ */
+
 void initVM(VirtualMachine*);
 int readInstructions(FILE*, Instruction*);
 void dumpInstructions(FILE*, Instruction*, int numOfIns);
 int getBasePointer(int *stack, int currentBP, int L);
 void dumpStack(FILE*, int* stack, int sp, int bp);
 int executeInstruction(VirtualMachine* vm, Instruction ins, FILE* vmIn, FILE* vmOut);
+
+/* ************************************************************************************ */
+/* Global Data and misc structs & enums                                                 */
+/* ************************************************************************************ */
 
 const char *opcodes[] = 
 {
@@ -26,10 +34,21 @@ const char *opcodes[] =
 
 enum { CONT, HALT };
 
+/**
+ * Initialize Virtual Machine
+ * */
 void initVM(VirtualMachine* vm)
 {
 	int i;
 	
+	// Null check.
+	if(vm == NULL)
+    {
+        printf("Error! Not enough memory. Could not create VM.\n");
+		return;
+    }
+	
+	// Initialize virtual machine's variables. 
 	vm->BP = 1;
 	vm->SP = 0;
 	vm->PC = 0;
@@ -40,14 +59,12 @@ void initVM(VirtualMachine* vm)
 	
 	for (i = 0; i < MAX_STACK_HEIGHT; i++)
 		vm->stack[i] = 0;
-	
-    if(vm == NULL)
-    {
-        printf("Error! Not enough memory. Could not create VM.\n");
-		return;
-    }
 }
 
+/**
+ * Fill the (ins)tructions array by reading instructions from (in)put file
+ * Return the number of instructions read
+ * */
 int readInstructions(FILE* in, Instruction* ins)
 {
     // Instruction index
@@ -62,6 +79,9 @@ int readInstructions(FILE* in, Instruction* ins)
     return i;
 }
 
+/**
+ * Dump instructions to the output file
+ * */
 void dumpInstructions(FILE* out, Instruction* ins, int numOfIns)
 {
     // Header
@@ -82,6 +102,10 @@ void dumpInstructions(FILE* out, Instruction* ins, int numOfIns)
     }
 }
 
+/**
+ * Returns the base pointer for the lexiographic level L
+ * A modified version of the code in the assignment pdf.
+ * */
 int getBasePointer(int *stack, int currentBP, int L)
 {
 	int base;
@@ -131,26 +155,32 @@ void dumpStack(FILE* out, int* stack, int sp, int bp)
     }
 }
 
+/**
+ * Executes the (ins)truction on the (v)irtual (m)achine.
+ * This changes the state of the virtual machine.
+ * Returns HALT if the executed instruction was meant to halt the VM.
+ * .. Otherwise, returns CONT
+ * */
 int executeInstruction(VirtualMachine* vm, Instruction ins, FILE* vmIn, FILE* vmOut)
 {
 	int level;
 	
     switch(ins.op)
     {
-        case 1:
+        case 1: // LIT
 			vm->RF[ins.r] = ins.m;
 			break;
-		case 2:
+		case 2: // RTN
 			vm->SP = vm->BP-1;
 			vm->BP = vm->stack[vm->SP+3];
 			vm->PC = vm->stack[vm->SP+4];
 			break;
-		case 3:
+		case 3: // LOD
 			level = getBasePointer(vm->stack, vm->BP, ins.l);
 			level += ins.m;
 			vm->RF[ins.r] = vm->stack[level];
 			break;
-		case 4: 
+		case 4: // STO
 			level = getBasePointer(vm->stack, vm->BP, ins.l);
 			level += ins.m;
 			vm->stack[level] = vm->RF[ins.r];
@@ -163,7 +193,7 @@ int executeInstruction(VirtualMachine* vm, Instruction ins, FILE* vmIn, FILE* vm
 			vm->BP = vm->SP + 1;
 			vm->PC = ins.m;
 			break;
-		case 6:
+		case 6: // INC
 			vm->SP = vm->SP + ins.m;
 			break;
 		case 7: // JMP
@@ -173,72 +203,72 @@ int executeInstruction(VirtualMachine* vm, Instruction ins, FILE* vmIn, FILE* vm
 			if (vm->RF[ins.r] == 0)
 				vm->PC = ins.m;
 			break;
-		case 9:
+		case 9: // SIO 1
 			fprintf(vmOut, "%d", vm->RF[ins.r]);
 			break;
-		case 10:
+		case 10: // SIO 2
 			fscanf(vmIn, "%d", &(vm->RF[ins.r]));
 			break;
-		case 11: 
+		case 11: // SIO 3
 			return HALT;
-		case 12:
+		case 12: // NEG
 			vm->RF[ins.r] = vm->RF[ins.l];
 			break;
-		case 13:
+		case 13: // ADD
 			vm->RF[ins.r] = vm->RF[ins.l] + vm->RF[ins.m];
 			break;
-		case 14:
+		case 14: // SUB
 			vm->RF[ins.r] = vm->RF[ins.l] - vm->RF[ins.m];
 			break;
-		case 15:
+		case 15: // MUL
 			vm->RF[ins.r] = vm->RF[ins.l] * vm->RF[ins.m];
 			break;
-		case 16:
+		case 16: // DIV
 			vm->RF[ins.r] = vm->RF[ins.l] / vm->RF[ins.m];
 			break;
-		case 17:
+		case 17: // ODD
 			vm->RF[ins.r] = vm->RF[ins.r]%2;
 			break;
-		case 18:
+		case 18: // MOD
 			vm->RF[ins.r] = vm->RF[ins.l] % vm->RF[ins.m];
 			break;
-		case 19:
+		case 19: // EQL
 			if (vm->RF[ins.l] == vm->RF[ins.m])
 				vm->RF[ins.r] = 1;
 			else
 				vm->RF[ins.r] = 0;
 			break;
-		case 20:
+		case 20: // NEQ
 			if (vm->RF[ins.l] == vm->RF[ins.m])
 				vm->RF[ins.r] = 0;
 			else
 				vm->RF[ins.r] = 1;
 			break;
-		case 21:
+		case 21: // LSS
 			if (vm->RF[ins.l] < vm->RF[ins.m])
 				vm->RF[ins.r] = 1;
 			else
 				vm->RF[ins.r] = 0;
 			break;
-		case 22:
+		case 22: // LEQ
 			if (vm->RF[ins.l] <= vm->RF[ins.m])
 				vm->RF[ins.r] = 1;
 			else
 				vm->RF[ins.r] = 0;
 			break;
-		case 23:
+		case 23: // GTR
 			if (vm->RF[ins.l] > vm->RF[ins.m])
 				vm->RF[ins.r] = 1;
 			else
 				vm->RF[ins.r] = 0;
 			break;
-		case 24:
+		case 24: // GEQ
 			if (vm->RF[ins.l] >= vm->RF[ins.m])
 				vm->RF[ins.r] = 1;
 			else
 				vm->RF[ins.r] = 0;
 			break;
-        default:
+        default: // HALT
             fprintf(stderr, "Illegal instruction?");
             return HALT;
     }
@@ -246,6 +276,21 @@ int executeInstruction(VirtualMachine* vm, Instruction ins, FILE* vmIn, FILE* vm
     return CONT;
 }
 
+/**
+ * inp: The FILE pointer containing the list of instructions to
+ *         be loaded to code memory of the virtual machine.
+ * 
+ * outp: The FILE pointer to write the simulation output, which
+ *       contains both code memory and execution history.
+ * 
+ * vm_inp: The FILE pointer that is going to be attached as the input
+ *         stream to the virtual machine. Useful to feed input for SIO
+ *         instructions.
+ * 
+ * vm_outp: The FILE pointer that is going to be attached as the output
+ *          stream to the virtual machine. Useful to save the output printed
+ *          by SIO instructions.
+ * */
 void simulateVM(FILE* inp, FILE* outp, FILE* vm_inp, FILE* vm_outp)
 {
 	int i = 0, flag = CONT, numOfIns = 0;
@@ -307,6 +352,7 @@ void simulateVM(FILE* inp, FILE* outp, FILE* vm_inp, FILE* vm_outp)
 
     fprintf(outp, "HLT\n");
 	
+	// Free dynamically allocated structures.
 	free(ins);
 	free(vm);
 	
